@@ -186,11 +186,3 @@ def train_lgb(Xtrain, Ytrain, Xvalid, Yvalid):
 # bst = train_lgb(X_val_train, Y_val_train, X_val_test, Y_val_test)
 bst = train_lgb(X_train, Y_train, X_test, Y_test)  # AUC score = 0.9705
 
-
-
-
-
-
-
-
-
