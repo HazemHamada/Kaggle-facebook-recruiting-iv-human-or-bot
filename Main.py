@@ -4,7 +4,11 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 from sklearn.preprocessing import LabelEncoder
-
+from sklearn import metrics
+import lightgbm as lgb
+from sklearn import tree
+from sklearn.linear_model import LogisticRegression
+from sklearn.feature_selection import SelectFromModel
 
 # load data
 data = pd.read_csv("train.csv")
@@ -39,9 +43,9 @@ x3 = k2.bid_id
 x4 = k1['url']
 x5 = k1['time']
 x6 = k1['device']
-x7 = bids.groupby('bidder_id').time.apply(lambda x: x.apply(lambda t: t-t % 100000000000).value_counts().max())
-x8 = bids.groupby('bidder_id').time.apply(lambda x: x.apply(lambda t: t-t % 1000000000000).value_counts().max())
-x9 = bids.groupby('bidder_id').time.apply(lambda x: x.apply(lambda t: t-t % 10000000000).value_counts().max())
+x7 = bids.groupby('bidder_id').time.apply(lambda x: x.apply(lambda t: t - t % 100000000000).value_counts().max())
+x8 = bids.groupby('bidder_id').time.apply(lambda x: x.apply(lambda t: t - t % 1000000000000).value_counts().max())
+x9 = bids.groupby('bidder_id').time.apply(lambda x: x.apply(lambda t: t - t % 10000000000).value_counts().max())
 x10 = bids.groupby('bidder_id').time.apply(lambda group: (group.sort_values().diff().fillna(group.mean())).median())
 x11 = k1['ip']
 x12 = k3.bid_id
@@ -60,7 +64,6 @@ bids = pd.merge(bids, times[['auction', 'short', 'startt', 'endt']], on='auction
 bids['t_until_end'] = bids.endt - bids.time
 bids['t_since_start'] = bids.time - bids.startt
 
-
 x15 = bids.groupby('bidder_id')['short'].mean()
 x15._set_name(name='x15')
 x16 = bids.groupby('bidder_id')['t_until_end'].median()
@@ -69,23 +72,22 @@ x = x16.rename(columns={'t_until_end': 't_until_end_median'})
 x17 = bids.groupby('bidder_id')['t_since_start'].median()
 x17._set_name(name='x17')
 
-
-x_total = pd.merge(x1._set_name(name='x1'), x2._set_name(name='x2'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x3._set_name(name='x3'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x4._set_name(name='x4'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x5._set_name(name='x5'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x6._set_name(name='x6'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x7._set_name(name='x7'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x8._set_name(name='x8'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x9._set_name(name='x9'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x10._set_name(name='x10'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x11._set_name(name='x11'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x12._set_name(name='x12'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x13._set_name(name='x13'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x14._set_name(name='x14'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x15._set_name(name='x15'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x16._set_name(name='x16'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x17._set_name(name='x17'),on='bidder_id',how='left')
+x_total = pd.merge(x1._set_name(name='x1'), x2._set_name(name='x2'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x3._set_name(name='x3'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x4._set_name(name='x4'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x5._set_name(name='x5'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x6._set_name(name='x6'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x7._set_name(name='x7'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x8._set_name(name='x8'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x9._set_name(name='x9'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x10._set_name(name='x10'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x11._set_name(name='x11'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x12._set_name(name='x12'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x13._set_name(name='x13'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x14._set_name(name='x14'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x15._set_name(name='x15'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x16._set_name(name='x16'), on='bidder_id', how='left')
+x_total = pd.merge(x_total, x17._set_name(name='x17'), on='bidder_id', how='left')
 
 
 def log_entropy(x):
@@ -123,9 +125,10 @@ x_total = x_total.rename(columns={'ips_per_bidder_per_auction_mean': 'x21'})
 
 # Preprocessing
 
-x = ['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8', 'x9', 'x10', 'x11', 'x12', 'x13', 'x14', 'x15', 'x16', 'x17', 'x18', 'x19', 'x20', 'x21']
+x = ['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8', 'x9', 'x10', 'x11', 'x12', 'x13', 'x14', 'x15', 'x16', 'x17',
+     'x18', 'x19', 'x20', 'x21']
 x_tran = x_total.copy()
-x_tran[x] = np.log(1+x_tran[x])
+x_tran[x] = np.log(1 + x_tran[x])
 # quantile_transformer = preprocessing.QuantileTransformer(output_distribution='normal', random_state=0)
 # x_tran[x] = quantile_transformer.fit_transform(x_tran[x])
 x_norm = x_tran.copy()
@@ -133,15 +136,58 @@ x_norm[x] = preprocessing.normalize(x_norm[x], norm='l2')
 
 ########################################################################################################################
 
-#data splitting
+# data splitting
 
 X = pd.merge(data[['bidder_id']], x_norm, how='left', on=['bidder_id'])
+X = X.drop(labels='bidder_id', axis=1)
 Y = data[['outcome']]
 X = X.fillna(X.mean())
 
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=1)
 X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.2, random_state=1)
-X_val_train, X_val_test, Y_val_train, Y_val_test = train_test_split(X_val, Y_val, test_size=0.2, random_state=1)
+
+
+# X_val_train, X_val_test, Y_val_train, Y_val_test = train_test_split(X_val, Y_val, test_size=0.2, random_state=1)
+
+########################################################################################################################
+
+# training
+
+"""
+def treeClassifaier(Xtrain, Ytrain, Xvalid, Yvalid):
+    clf = tree.DecisionTreeClassifier()
+    clf = clf.fit(Xtrain, Ytrain)
+    valid_pred = clf.predict(Xvalid)
+    valid_score = metrics.roc_auc_score(Yvalid, valid_pred)
+    print(f"Validation AUC score: {valid_score:.4f}")
+    return clf
+
+
+treeM = treeClassifaier(X_train, Y_train, X_test, Y_test)  # AUC score = 0.7523
+"""
+
+
+def train_lgb(Xtrain, Ytrain, Xvalid, Yvalid):
+    dtrain = lgb.Dataset(Xtrain, label=Ytrain)
+    dvalid = lgb.Dataset(Xvalid, label=Yvalid)
+
+    param = {'num_leaves': 64, 'objective': 'binary',
+             'metric': 'auc'}
+    print("Training model!")
+    bst = lgb.train(param, dtrain, num_boost_round=1000, valid_sets=[dvalid],
+                    early_stopping_rounds=10, verbose_eval=False)
+
+    valid_pred = bst.predict(Xvalid)
+    valid_score = metrics.roc_auc_score(Yvalid, valid_pred)
+    print(f"Validation AUC score: {valid_score:.4f}")
+    return bst
+
+
+# bst = train_lgb(X_val_train, Y_val_train, X_val_test, Y_val_test)
+bst = train_lgb(X_train, Y_train, X_test, Y_test)  # AUC score = 0.9705
+
+
+
 
 
 
