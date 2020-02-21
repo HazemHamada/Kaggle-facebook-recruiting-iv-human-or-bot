@@ -119,14 +119,18 @@ x_total = x_total.rename(columns={'ips_per_bidder_per_auction_mean': 'x21'})
 ########################################################################################################################
 
 # Preprocessing
-
-
+quantile_transformer = preprocessing.QuantileTransformer(output_distribution='normal', random_state=0)
+x = ['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8', 'x9', 'x10', 'x11', 'x12', 'x13', 'x14', 'x15', 'x16', 'x17', 'x18', 'x19', 'x20', 'x21']
+x_tran = x_total
+x_tran[x] = quantile_transformer.fit_transform(x_total[x])
+x_norm = x_tran
+x_norm[x] = preprocessing.normalize(x_tran[x], norm='l2')
 
 
 ########################################################################################################################
 
 #data splitting
-X = pd.merge(data[['bidder_id', 'payment_account', 'address']], x_total, how='inner', left_on=['bidder_id'], right_on=['bidder_id'])
+X = pd.merge(data[['bidder_id']], x_total, how='inner', left_on=['bidder_id'], right_on=['bidder_id'])
 Y = data[['outcome']]
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=1)
 X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.2, random_state=1)
