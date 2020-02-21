@@ -29,10 +29,9 @@ bids = bids[['bid_id', 'bidder_id', 'auction', 'time', 'ip', 'url']].join(encode
 
 
 # feature generation
+
 k1 = bids.groupby('bidder_id').nunique()
-# k2 = bids.groupby(['bidder_id', 'country']).nunique()
 k2 = bids.groupby('bidder_id').apply(lambda g: g.groupby('country').nunique().mean())
-# k3 = bids.groupby(['bidder_id', 'merchandise']).nunique()
 k3 = bids.groupby('bidder_id').apply(lambda g: g.groupby('merchandise').nunique().mean())
 x1 = bids.groupby('bidder_id').bid_id.count()
 x2 = k1['auction']
@@ -46,25 +45,8 @@ x9 = bids.groupby('bidder_id').time.apply(lambda x: x.apply(lambda t: t-t % 1000
 x10 = bids.groupby('bidder_id').time.apply(lambda group: (group.sort_values().diff().fillna(group.mean())).median())
 x11 = k1['ip']
 x12 = k3.bid_id
-# x13 = bids.groupby(['bidder_id', 'auction']).time.median()
 x13 = bids.groupby('bidder_id').apply(lambda g: g.groupby('auction').time.median().mean())
 x14 = k1['country']
-
-########################################################################################################################
-"""
-times = bids.groupby('auction').time.min().reset_index()
-times = times.rename(columns={'time': 'startt'})
-#times = times.rename('startt')
-times2 = bids.groupby('auction').time.max().reset_index()
-times2 = times2.rename(columns={'time': 'endt'})
-#times2 = times2.rename('endt')
-times = pd.merge(times, times2, on='auction', how='left')
-times['duration'] = times.endt - times.startt
-times['short'] = 1.0 * (times['duration'] < 3.01 * 4547368124071.8799)
-bids = pd.merge(bids, times, on='auction', how='left')
-bids['t_until_end'] = bids.endt - bids.time
-bids['t_since_start'] = bids.time - bids.startt
-"""
 
 times = bids.groupby('auction').time.min().reset_index()
 times = times.rename(columns={'time': 'startt'})
@@ -106,7 +88,6 @@ x_total = pd.merge(x_total, x16._set_name(name='x16'),on='bidder_id',how='left')
 x_total = pd.merge(x_total, x17._set_name(name='x17'),on='bidder_id',how='left')
 
 
-
 def log_entropy(x):
     e = np.sum(np.log(np.array(range(1, np.sum(x)))))
     for i in x:
@@ -126,8 +107,6 @@ c = c.rename(columns={'bids_per_auction_per_ip_entropy': 'bids_per_auction_per_i
 X = pd.merge(X, c[['bidder_id', 'bids_per_auction_per_ip_entropy_mean']], on='bidder_id', how='left')
 b = bids[['bidder_id', 'auction', 'ip']].groupby(['bidder_id', 'auction']).ip.nunique().reset_index()
 b = b.rename(columns={'ip': 'ips_per_bidder_per_auction'})
-# 	b = pd.merge(b,a, on=['bidder_id', 'auction'], how='left')
-# 	b['f_ips_per_bidder_per_auction'] = b['ips_per_bidder_per_auction']/b['bids_per_auction']
 c = b.groupby('bidder_id').ips_per_bidder_per_auction.median().reset_index()
 c = c.rename(columns={'ips_per_bidder_per_auction': 'ips_per_bidder_per_auction_median'})
 X = pd.merge(X, c[['bidder_id', 'ips_per_bidder_per_auction_median']], on='bidder_id', how='left')
@@ -140,18 +119,6 @@ x_total = x_total.rename(columns={'bids_per_auction_per_ip_entropy_mean': 'x19'}
 x_total = x_total.rename(columns={'ips_per_bidder_per_auction_median': 'x20'})
 x_total = x_total.rename(columns={'ips_per_bidder_per_auction_mean': 'x21'})
 
-"""
-x18 = x.groupby('bidder_id')['bids_per_auction_per_ip_entropy_median']
-x19 = x.groupby('bidder_id')['bids_per_auction_per_ip_entropy_mean']
-x20 = x.groupby('bidder_id')['ips_per_bidder_per_auction_median']
-x21 = x.groupby('bidder_id')['ips_per_bidder_per_auction_mean']
-
-x_total = pd.merge(x_total, x18._set_name(name='x18'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x19._set_name(name='x19'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x20._set_name(name='x20'),on='bidder_id',how='left')
-x_total = pd.merge(x_total, x21._set_name(name='x21'),on='bidder_id',how='left')
-"""
-
 
 """
 
@@ -159,7 +126,7 @@ x_total = pd.merge(x_total, x21._set_name(name='x21'),on='bidder_id',how='left')
 
 2. Total auctions for each bidder (1)
 
-3. Total bids in each country for each bidder (1)###############################
+3. Total bids in each country for each bidder (1)
 
 4. Total urls for each bidder (1)
 
@@ -169,19 +136,33 @@ x_total = pd.merge(x_total, x21._set_name(name='x21'),on='bidder_id',how='left')
 
 7. Max number of bids that share the same left-most-5 digits of time for each bidder (1) ,t-t%10^5
 
-8. Max number of bids that share the same left-most-4 digits of time for each bidder (1) ,t-mod(t,10^4))
+8. Max number of bids that share the same left-most-4 digits of time for each bidder (1)
 
-9. Max number of bids that share the same left-most-6 digits of time for each bidder (1) ,t-mod(t,10^6))
+9. Max number of bids that share the same left-most-6 digits of time for each bidder (1)
 
 10. The median time difference of all consecutive bids for each bidder (1)
 
 11. Total ips for each bidder (1)
 
-12. Total bids of each merchandise for each bidder (1)######################################
+12. Total bids of each merchandise for each bidder (1)
 
-13. The median of each auction's time for each bidder. (1)##################################
+13. The median of each auction's time for each bidder. (1)
 
 14. The total number of countries for each bidder. (1)
+
+15.
+
+16.
+
+17.
+
+18.
+
+19.
+
+20.
+
+21.
 
 The ML models I used are XGB, adaboost and svm ensembled by ranking (weights around 1.0, 0.9, 0.8 for each).
 
