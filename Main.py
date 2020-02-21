@@ -12,21 +12,19 @@ bids = pd.read_csv("bids.csv")
 bids = bids.sort_values('time')
 test = pd.read_csv("test.csv")
 sampleSubmission = pd.read_csv("sampleSubmission.csv")
+########################################################################################################################
 
 # data cleaning
 
 bids = bids.dropna()
 data = data.dropna()
-# data.fillna(data.median())
-# bids.fillna(bids.median())
 data = data.drop_duplicates()
 bids = bids.drop_duplicates()
-
 encoder = LabelEncoder()
 cat_features = ['merchandise', 'device', 'country']
 encoded = bids[cat_features].apply(encoder.fit_transform)
 bids = bids[['bid_id', 'bidder_id', 'auction', 'time', 'ip', 'url']].join(encoded)
-
+########################################################################################################################
 
 # feature generation
 
@@ -118,68 +116,18 @@ x_total = x_total.rename(columns={'bids_per_auction_per_ip_entropy_median': 'x18
 x_total = x_total.rename(columns={'bids_per_auction_per_ip_entropy_mean': 'x19'})
 x_total = x_total.rename(columns={'ips_per_bidder_per_auction_median': 'x20'})
 x_total = x_total.rename(columns={'ips_per_bidder_per_auction_mean': 'x21'})
+########################################################################################################################
+
+# Preprocessing
 
 
-"""
-
-1. Total bids for each bidder (1)
-
-2. Total auctions for each bidder (1)
-
-3. Total bids in each country for each bidder (1)
-
-4. Total urls for each bidder (1)
-
-5. Total unique times for each bidder (1)
-
-6. Total devices for each bidder (1)
-
-7. Max number of bids that share the same left-most-5 digits of time for each bidder (1) ,t-t%10^5
-
-8. Max number of bids that share the same left-most-4 digits of time for each bidder (1)
-
-9. Max number of bids that share the same left-most-6 digits of time for each bidder (1)
-
-10. The median time difference of all consecutive bids for each bidder (1)
-
-11. Total ips for each bidder (1)
-
-12. Total bids of each merchandise for each bidder (1)
-
-13. The median of each auction's time for each bidder. (1)
-
-14. The total number of countries for each bidder. (1)
-
-15.
-
-16.
-
-17.
-
-18.
-
-19.
-
-20.
-
-21.
-
-The ML models I used are XGB, adaboost and svm ensembled by ranking (weights around 1.0, 0.9, 0.8 for each).
-
-1. setting class.weights for SVM are quite helpful. ( class.weights=c('0'=0.1,'1'=1.0) )
-
-2. For adaboost, I used svm and rf as base models, and adaboost as second stage stacking.
-
-3. XGB itself gives the best performance of the three. (around 0.92 in CV)
-
-Final models are the ranking average of the three with weights around 1.0xgb + 0.9ada + 0.8*svm, and use log(1+x) to scale the features.
-"""
 
 
-X = data[['bidder_id', 'payment_account', 'address']].join(x_total, on='bidder_id', how='left')
-Y = data[['outcome']]
+########################################################################################################################
 
 #data splitting
+X = pd.merge(data[['bidder_id', 'payment_account', 'address']], x_total, how='inner', left_on=['bidder_id'], right_on=['bidder_id'])
+Y = data[['outcome']]
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=1)
 X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.2, random_state=1)
 X_val_train, X_val_test, Y_val_train, Y_val_test = train_test_split(X_val, Y_val, test_size=0.2, random_state=1)
