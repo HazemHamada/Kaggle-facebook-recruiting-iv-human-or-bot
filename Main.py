@@ -88,20 +88,39 @@ x17 = bids.groupby('bidder_id')['t_since_start'].median()
 x17._set_name(name='x17')
 
 
+x_total = pd.merge(x1._set_name(name='x1'), x2._set_name(name='x2'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x3._set_name(name='x3'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x4._set_name(name='x4'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x5._set_name(name='x5'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x6._set_name(name='x6'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x7._set_name(name='x7'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x8._set_name(name='x8'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x9._set_name(name='x9'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x10._set_name(name='x10'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x11._set_name(name='x11'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x12._set_name(name='x12'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x13._set_name(name='x13'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x14._set_name(name='x14'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x15._set_name(name='x15'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x16._set_name(name='x16'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x17._set_name(name='x17'),on='bidder_id',how='left')
+
+
+
 def log_entropy(x):
     e = np.sum(np.log(np.array(range(1, np.sum(x)))))
     for i in x:
         e -= np.sum(np.log(np.array(range(1, i))))
     return e
 
+
 a = bids[['bidder_id', 'auction', 'ip']].groupby(['bidder_id', 'auction', 'ip']).size().reset_index()
 a = a.rename(columns={0: 'bids_per_auction_per_ip'})
-#a = a.rename('bids_per_auction_per_ip')
-b = a.groupby(['bidder_id', 'auction']).bids_per_auction_per_ip.apply(log_entropy)
+b = a.groupby(['bidder_id', 'auction']).bids_per_auction_per_ip.apply(log_entropy).reset_index()
 b = b.rename(columns={'bids_per_auction_per_ip': 'bids_per_auction_per_ip_entropy'})
 c = b.groupby('bidder_id').bids_per_auction_per_ip_entropy.median().reset_index()
 c = c.rename(columns={'bids_per_auction_per_ip_entropy': 'bids_per_auction_per_ip_entropy_median'})
-X = pd.DataFrame(c[['bidder_id', 'bids_per_auction_per_ip_entropy_median']])
+X = pd.merge(x_total, c[['bidder_id', 'bids_per_auction_per_ip_entropy_median']], on='bidder_id', how='left')
 c = b.groupby('bidder_id').bids_per_auction_per_ip_entropy.mean().reset_index()
 c = c.rename(columns={'bids_per_auction_per_ip_entropy': 'bids_per_auction_per_ip_entropy_mean'})
 X = pd.merge(X, c[['bidder_id', 'bids_per_auction_per_ip_entropy_mean']], on='bidder_id', how='left')
@@ -115,6 +134,7 @@ X = pd.merge(X, c[['bidder_id', 'ips_per_bidder_per_auction_median']], on='bidde
 c = b.groupby('bidder_id').ips_per_bidder_per_auction.mean().reset_index()
 c = c.rename(columns={'ips_per_bidder_per_auction': 'ips_per_bidder_per_auction_mean'})
 x = pd.merge(X, c[['bidder_id', 'ips_per_bidder_per_auction_mean']], on='bidder_id', how='left')
+
 x18 = x.groupby('bidder_id')['bids_per_auction_per_ip_entropy_median']
 #x18._set_name(name='x18')
 x19 = x.groupby('bidder_id')['bids_per_auction_per_ip_entropy_mean']
@@ -125,26 +145,10 @@ x21 = x.groupby('bidder_id')['ips_per_bidder_per_auction_mean']
 #x21._set_name(name='x21')
 
 
-x_total = pd.merge(x1._set_name(name='x1'),x2._set_name(name='x2'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x3._set_name(name='x3'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x4._set_name(name='x4'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x5._set_name(name='x5'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x6._set_name(name='x6'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x7._set_name(name='x7'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x8._set_name(name='x8'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x9._set_name(name='x9'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x10._set_name(name='x10'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x11._set_name(name='x11'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x12._set_name(name='x12'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x13._set_name(name='x13'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x14._set_name(name='x14'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x15._set_name(name='x15'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x16._set_name(name='x16'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x17._set_name(name='x17'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x18._set_name(name='x18'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x19._set_name(name='x19'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x20._set_name(name='x20'),on='bidder_id',how='left')
-x_total = pd.merge(x_total,x21._set_name(name='x21'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x18._set_name(name='x18'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x19._set_name(name='x19'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x20._set_name(name='x20'),on='bidder_id',how='left')
+x_total = pd.merge(x_total, x21._set_name(name='x21'),on='bidder_id',how='left')
 
 """
 
